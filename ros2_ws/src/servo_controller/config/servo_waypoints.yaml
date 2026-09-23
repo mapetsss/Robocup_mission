@@ -1,0 +1,48 @@
+servo_driver_node:
+  ros__parameters:
+    dry_run: false
+
+    i2c_bus: 2
+    frequency_hz: 50
+    min_pulse_us: 500
+    max_pulse_us: 2500
+
+    left_channel: 0
+    right_channel: 1
+    big_channel: 2
+
+    left_home_angle: 0.0
+    right_home_angle: 0.0
+    big_home_angle: 0.0
+
+    left_trigger_angle: 0.0
+    right_trigger_angle: 0.0
+    big_trigger_angle: 0.0
+
+    move_delay_s: 0.5
+    reset_after_trigger: true
+    reset_delay_s: 0.8
+    set_home_on_start: true
+    startup_move_all_on_start: true
+    startup_angle: 90.0
+    startup_move_delay_s: 0.5
+
+servo_waypoint_task:
+  ros__parameters:
+    pose_topic: /mavros/local_position/pose
+    reach_tolerance_m: 0.15
+
+    # 这里写 /mavros/local_position/pose 对应的 EKF2 local 平面坐标 [x, y]。
+    # 触发判断只看 XY 距离，不判断 Z 高度。
+    # 改坐标后重新启动 launch 即可，不需要重新 build。
+    big_point: [0.20, 0.0]
+    left_point: [0.20, 0.20]
+    right_point: [0.0, 0.20]
+
+    big_service: /servo/big_home
+    left_service: /servo/left_home
+    right_service: /servo/right_home
+
+    enable_big: true
+    enable_left: true
+    enable_right: true

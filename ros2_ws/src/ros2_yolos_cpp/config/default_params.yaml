@@ -1,0 +1,218 @@
+# ros2_yolos_cpp 默认参数文件
+#
+# 作用：
+#   这个文件给 /yolos_detector 节点提供默认推理参数、阈值参数和距离估计参数。
+#
+# 使用方式：
+#   1. detector.launch.py 默认会加载安装后的 default_params.yaml。
+#   2. 如果你修改的是 src 下这个文件，建议重新 colcon build，或者启动时显式指定：
+#
+#      ros2 launch ros2_yolos_cpp detector.launch.py \
+#        params_file:=/home/banana/detect_ws/src/ros2_yolos_cpp/config/default_params.yaml \
+#        start_camera:=false \
+#        image_topic:=/camera/image_raw \
+#        model_path:=/home/banana/detect_ws/src/models/best.onnx \
+#        labels_path:=/home/banana/detect_ws/src/models/classes.txt \
+#        use_gpu:=false \
+#        conf_threshold:=0.3
+#
+# 当前系统说明：
+#   - 图像采集由 mono_camera_capture 提供，话题是 /camera/image_raw。
+#   - 启动 ros2_yolos_cpp 时应使用 start_camera:=false，避免它再启动 usb_cam 抢占摄像头。
+#   - 当前模型路径建议通过 launch 参数传入，而不是长期写死在这里。
+
+/**:
+  ros__parameters:
+    # =========================
+    # 1. YOLO 模型配置
+    # =========================
+
+    # model_path:
+    #   ONNX 模型文件路径。
+    #   这是必填项。如果为空，节点 configure 阶段会失败。
+    #
+    # 当前你的模型文件：
+    #   /home/banana/detect_ws/src/models/best.onnx
+    #
+    # 推荐做法：
+    #   通过 launch 命令传入 model_path，方便切换模型。
+    model_path: ""
+
+    # labels_path:
+    #   类别标签文件路径。
+    #   文件每一行对应一个类别名称，顺序必须和模型训练时的类别顺序一致。
+    #
+    # 当前你的标签文件：
+    #   /home/banana/detect_ws/src/models/classes.txt
+    #
+    # 当前 classes.txt 中只有 robocup，因此模型只会输出这个类别。
+    # 如果 labels 文件和 ONNX 模型不是同一套训练结果，类别显示会错。
+    labels_path: ""
+
+    # use_gpu:
+    #   是否启用 GPU 推理。
+    #
+    # false:
+    #   使用 CPU 推理，当前推荐先用这个跑通链路。
+    #
+    # true:
+    #   需要 ONNX Runtime GPU / CUDA 等环境正确配置。
+    #   当前没有确认 CUDA 推理环境前，不建议开启。
+    use_gpu: false
+
+    # yolo_version:
+    #   指定模型版本解析方式。
+    #
+    # 可选值：
+    #   auto, v7, v8, v10, v11, v26, nas
+    #
+    # 推荐：
+    #   先保持 auto，让 YOLOs-CPP 自动判断。
+    #   如果 auto 无法正确解析模型，再根据你的训练模型版本手动指定。
+    yolo_version: "auto"
+
+    # =========================
+    # 2. 检测阈值配置
+    # =========================
+
+    # conf_threshold:
+    #   置信度阈值，范围 0.0 到 1.0。
+    #   检测框置信度低于该值时会被过滤掉。
+    #
+    # 调参方向：
+    #   检测不到目标 / 漏检多：
+    #     降低，例如 0.3 -> 0.2
+    #
+    #   误检多 / 错框多：
+    #     提高，例如 0.3 -> 0.5
+    #
+    # 当前建议：
+    #   初次测试用 0.3。
+    #   原 launch 文件中默认传入 0.8，偏高，容易导致 detections 为空。
+    conf_threshold: 0.4
+
+    # nms_threshold:
+    #   NMS 阈值，也就是重叠检测框的抑制阈值，范围 0.0 到 1.0。
+    #
+    # 调参方向：
+    #   同一个目标出现多个框：
+    #     降低，例如 0.45 -> 0.35
+    #
+    #   相邻目标被合并或只剩一个框：
+    #     提高，例如 0.45 -> 0.55
+    #
+    # 一般先保持 0.45。
+    nms_threshold: 0.45
+
+    # =========================
+    # 3. OBB / 最大检测数量
+    # =========================
+
+    # max_detections:
+    #   最大检测数量。
+    #   当前普通目标检测流程中不是最优先调整项。
+    #
+    # 如果画面里目标很多，且输出被截断，可以适当调大。
+    # 如果希望减少后处理负担，可以适当调小。
+    max_detections: 300
+
+    # =========================
+    # 4. 调试与性能输出
+    # =========================
+
+    # publish_debug_image:
+    #   是否发布带检测框的调试图像。
+    #
+    # 注意：
+    #   当前 ros2_yolos_cpp 源码里虽然有这个参数，但主流程未完整实现可视化图像发布。
+    #   因此即使设为 true，也不一定会出现带框图像话题。
+    #
+    # 如果你后续需要可视化，需要额外写一个节点：
+    #   订阅 /camera/image_raw 和 /yolos_detector/detections
+    #   画框后发布 /yolo/annotated_image 或保存图片。
+    publish_debug_image: false
+
+    # publish_timing:
+    #   是否发布推理耗时。
+    #
+    # true 时会发布：
+    #   /yolos_detector/timing
+    #
+    # 用途：
+    #   检查推理耗时、判断是否满足实时性。
+    #
+    # 调试阶段建议 true，正式运行可 false 减少输出。
+    publish_timing: false
+
+    # =========================
+    # 5. 相机内参
+    # =========================
+
+    # camera_fx:
+    #   相机 x 方向焦距，单位是像素。
+    #
+    # camera_fy:
+    #   相机 y 方向焦距，单位是像素。
+    #
+    # camera_cx:
+    #   相机主点 x 坐标，通常接近图像宽度的一半。
+    #
+    # camera_cy:
+    #   相机主点 y 坐标，通常接近图像高度的一半。
+    #
+    # 这些参数用于从像素偏移估算实际距离：
+    #   offset_x_m = Z * (center_x - camera_cx) / camera_fx
+    #   offset_y_m = Z * (center_y - camera_cy) / camera_fy
+    #
+    # 注意：
+    #   下面是占位值，不是你的真实相机标定结果。
+    #   如果只看 /yolos_detector/detections 或 /yolos_detector/offset_px，
+    #   可以先不精确标定。
+    #
+    #   如果要使用 /yolos_detector/offset_m 或 /yolos_detector/distance_m，
+    #   必须用棋盘格或标定板完成相机标定后替换这些值。
+    #
+    # 对 1280x720 图像，主点大致可先设为：
+    #   camera_cx: 640.0
+    #   camera_cy: 360.0
+    #
+    # 对 640x480 图像，主点大致可先设为：
+    #   camera_cx: 320.0
+    #   camera_cy: 240.0
+    camera_fx: 712.761611
+    camera_fy: 713.007761
+    camera_cx: 360.353821
+    camera_cy: 242.596772
+
+    # =========================
+    # 6. 目标平面距离
+    # =========================
+
+    # target_plane_distance_m:
+    #   相机到目标所在平面的前向距离，单位是米。
+    #
+    # 用途：
+    #   参与 /yolos_detector/offset_m 和 /yolos_detector/distance_m 的计算。
+    #
+    # 注意：
+    #   这不是 YOLO 检测必需参数。
+    #   目标检测是否成功主要看 /yolos_detector/detections 是否非空。
+    #
+    # 如果没有真实场景几何约束，distance_m 只能作为粗略估计。
+    target_plane_distance_m: 2.0
+
+# =========================
+# 7. 节点专用覆盖示例
+# =========================
+#
+# 如果你不想影响所有节点，也可以只给 /yolos_detector 写参数：
+#
+# yolos_detector:
+#   ros__parameters:
+#     model_path: "/home/banana/detect_ws/src/models/best.onnx"
+#     labels_path: "/home/banana/detect_ws/src/models/classes.txt"
+#     use_gpu: false
+#     conf_threshold: 0.3
+#     nms_threshold: 0.45
+#     camera_cx: 640.0
+#     camera_cy: 360.0

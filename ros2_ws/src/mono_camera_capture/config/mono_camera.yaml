@@ -1,0 +1,35 @@
+mono_camera_node:
+  ros__parameters:
+    # USB 摄像头设备路径。当前已确认 /dev/video0 可以打开。
+    device_path: "/dev/video0"
+
+    # 摄像头采集格式。当前摄像头支持 MJPG 1280x720@30fps，YUYV 640x480@30fps。
+    fourcc: "YUYV"
+
+    # 采集分辨率。若 YOLO 推理压力较大，可改为 640x480。
+    width: 640
+    height: 480
+
+    # 目标采集帧率。实际帧率请用 ros2 topic hz /camera/image_raw 确认。
+    fps: 30.0
+
+    # 采集缓冲数量。数值越小延迟通常越低，机载实时任务建议 1 到 2。
+    buffer_size: 2
+
+    # 发布到 ROS 2 的图像编码。接 ros2_yolos_cpp 时建议保持 bgr8。
+    output_encoding: "bgr8"
+
+    # 图像消息 header.frame_id。后续做相机外参/TF 时需要与坐标系命名一致。
+    frame_id: "camera_link"
+
+    # 当前 camera_info 只发布占位内参；完成相机标定后再替换真实内参。
+    publish_camera_info: true
+
+    # 是否在日志中打印发布帧率。
+    log_fps: true
+
+    # 读取失败时是否尝试重新打开摄像头。
+    reconnect_on_failure: true
+
+    # 重连日志和重连尝试的节流周期，单位毫秒。
+    reconnect_period_ms: 1000

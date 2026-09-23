@@ -1,0 +1,64 @@
+mavros_offboard_node:
+  ros__parameters:
+    # ===== 基础任务参数 =====
+    # 默认返航方向：1=left，2=right。二维码未生效时也默认 left。
+    param3: 1
+    pose_timeout_s: 1.0
+
+    # ===== 二维码模拟回传，现场调试只改这里 =====
+    # 格式: 第一个物品,第二个物品,返航方向
+    # 例如 apple,motorcycle,left 会把返航方向设置为 left。
+    qrcode_result: apple,motorcycle,left
+    qrcode_hover_s: 1.0
+
+    # ===== 遥控器/场地坐标到 MAVROS local 的转换 =====
+    # 节点内所有 x/y 任务参数统一解释为:
+    #   x = 场地/遥控器前方 F，向前为正
+    #   y = 场地/遥控器左方 L，向左为正
+    # 如果按标准俯视图改坐标，图上横轴向右为 +X、纵轴向上为 +Y，则换算为:
+    #   YAML x = 图上 Y
+    #   YAML y = -图上 X
+    # 以下四个值来自 2026-06-05 现场手持实测:
+    #   F+1m -> MAVROS local (-0.930, +0.366)
+    #   L+1m -> MAVROS local (-0.232, -0.973)
+    field_forward_mavros_x: -0.930
+    field_forward_mavros_y: 0.366
+    field_left_mavros_x: -0.232
+    field_left_mavros_y: -0.973
+
+    # ===== 穿环坐标，现场调试只改这里 =====
+    # 坐标以 robocup_v1 启动后首次收到的 /mavros/local_position/pose 为任务原点。
+    # 发布给 MAVROS 时会自动加上该原点，避免飞向 EKF2 全局绝对 (0,0)。
+    # 这里的 x/y 也是场地坐标 F/L。
+    # ring_pass_direction_y: 1 表示从 -L 入口飞到 +L 出口；-1 表示反向。
+    ring_center_x: 6.0
+    ring_center_y: -1.6
+    ring_center_z: 1.6
+    ring_entry_offset_y: 1.0
+    ring_exit_offset_y: 1.0
+    ring_pass_direction_y: -1
+
+    # ===== 投放靶点坐标，现场调试只改这里 =====
+    # 以下坐标是相对任务原点的场地/遥控器 F/L 坐标，不是 /mavros/local_position/pose 绝对坐标。
+    # 对照标准俯视图: 第一个(-1.6,1.8)->(x=1.8,y=1.6), 第二个(-1.6,3.6)->(x=3.6,y=1.6),
+    # 特殊靶(-1.0,6.0)->(x=6.0,y=1.0), 圆环(1.6,6.0)->(x=6.0,y=-1.6)。
+    # 状态机顺序: 第一个靶点 -> 第二个靶点 -> 特殊靶。
+    # 舵机接口仍沿用原服务名: 特殊靶=big，第二个=left，第一个=right。
+    big_target_x: 6.0
+    big_target_y: 1.0
+    left_target_x: 3.6
+    left_target_y: 1.6
+    right_target_x: 1.8
+    right_target_y: 1.6
+    target_fly_z: 1.2
+    target_drop_z: 0.5
+    drop_duration_s: 2.0
+    rise_duration_s: 2.0
+    pre_servo_hold_s: 2.0
+    servo_hold_s: 0.5
+
+    # ===== 舵机服务 =====
+    # 当前逻辑：启动时舵机到 90 度，到目标点调用 *_home 回 0 度。
+    big_service: /servo/big_home
+    left_service: /servo/left_home
+    right_service: /servo/right_home
